@@ -45,6 +45,20 @@ async function run() {
       const cursor = await surveyCollection.findOne(query);
       res.send(cursor);
     });
+    app.patch('/surveys/:id', async(req,res)=>{
+       const id = req.params.id;
+       const updateData = req.body;
+      //  const updateItem = await surveyCollection.updateOne(id, updateData, {new:true});
+      //  const query = {_id:new ObjectId(id)};
+      const updateItem = await surveyCollection.findOneAndUpdate(
+        { _id: new ObjectId(id) },
+        { $set: updateData },
+        { returnDocument: 'after' },
+        {new:true}
+      );
+       res.send(updateItem.value);
+      
+    })
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -57,7 +71,7 @@ async function run() {
 
     // middlewares
     const verifyToken = (req, res, next) => {
-      console.log("inside verify token", req.headers);
+      // console.log("inside verify token", req.headers);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "unaouthorized access" });
       }
@@ -189,19 +203,7 @@ async function run() {
       const updateData = await userCollection.updateOne(filter, updateDoc);
       console.log(updateData);
 
-      app.get("/users/proUser/:email", verifyToken, async (req, res) => {
-        const email = req.params.email;
-        if (email !== req.decoded.email) {
-          return res.status(403).send({ message: "forbidden access" });
-        }
-        const query = { email: email };
-        const user = await userCollection.findOne(query);
-        let proUser = false;
-        if (user) {
-          proUser = user?.role === "proUser";
-        }
-        res.send({ proUser });
-      });
+      
 
       // const userEmail = payment.email;
 
@@ -213,6 +215,21 @@ async function run() {
       //   await userCollection.updateOne(filter, updateDoc);
       //
       res.send(result);
+    });
+
+    app.get("/proUsers/:email", async (req, res) => {
+      const email = req.params.email;
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      // console.log(user);
+      let proUser = false;
+      if (user) {
+        proUser = user?.role === "proUser";
+      }
+      res.send({ proUser });
     });
 
     app.get("/payment", async (req, res) => {
@@ -233,10 +250,10 @@ async function run() {
     //   res.send(result);
     // });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
